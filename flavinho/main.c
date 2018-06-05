@@ -63,7 +63,9 @@ int main() {
     semente = time(NULL);
     srand(semente);
 
-
+    double soma_pct_vazao = 0.0;
+    double soma_pct_util = 0.0;
+    double tamanho_pct = 0.0;
 
 
     //largura de banda em Bytes/seg
@@ -71,7 +73,7 @@ int main() {
     //tempo de simulacao em segundos
     double tempoSimulacao = 7200.0;
 
-    double media_esperada = 0.99;
+    double media_esperada = 0.6;
     media_esperada = media_esperada * larguraBanda;
     media_esperada /= 441;
 
@@ -102,7 +104,11 @@ int main() {
 
     //variavel para o calculo de E[N]
     Info en;
+    Info ew_entrada;
+    Info ew_saida;
     iniciaInfo(&en);
+    iniciaInfo(&ew_entrada);
+    iniciaInfo(&ew_saida);
 
     int num_pacotes = 0;
     double tempo_processando = 0.0;
@@ -117,7 +123,8 @@ int main() {
         //chegada de pacote
         if (tempoAtual == tempoChegada) {
             num_pacotes++;
-
+            
+            tamanho_pct = retornaPct();
             //printf("tempo atual == chegada %lF\n", tempoAtual);
             //getchar();
             //roteador vazio!
@@ -125,7 +132,7 @@ int main() {
             if (!fila) {
                 tempo_chegada_anterior = tempoChegada;
                 //gerar o tempo de atendimento
-                tempoSaida = tempoAtual + retornaPct() / larguraBanda;
+                tempoSaida = tempoAtual + tamanho_pct / larguraBanda;
                 if (tempoSaida < tempoSimulacao)
                     ocupacao += tempoSaida - tempoAtual;
                 else
@@ -139,23 +146,36 @@ int main() {
             en.somaAreas += en.numeroEventos * (tempoAtual - en.tempoAnterior);
             en.tempoAnterior = tempoAtual;
             en.numeroEventos++;
+
+            //cálculo E[W]
+            ew_entrada.somaAreas += ew_entrada.numeroEventos * (tempoAtual - ew_entrada.tempoAnterior);
+            ew_entrada.tempoAnterior = tempoAtual;
+            ew_entrada.numeroEventos++;
+
+            soma_pct_vazao += tamanho_pct;
+            soma_pct_util += tamanho_pct - 40.0;
+
+            //**********************
             //gero o tempo de chegada do proximo
             tempoChegada = tempoAtual + (-1.0 / intervaloPct) * log(aleatorio());
         } else {//saida de pacote
             //printf("tempo atual == saida %lF\n", tempoAtual);
             //getchar();
+            
+            tamanho_pct = retornaPct();
 
             fila--;
             tempo_processando += tempoSaida - tempo_chegada_anterior;
             if (fila) {
                 //gerar o tempo de atendimento
                 //do pacote seguinte na fila
-                tempoSaida = tempoAtual + retornaPct() / larguraBanda;
+                tempoSaida = tempoAtual + tamanho_pct / larguraBanda;
                 tempo_processando += tempoSaida - tempoAtual;
                 if (tempoSaida < tempoSimulacao)
                     ocupacao += tempoSaida - tempoAtual;
-                else
+                else{
                     ocupacao += tempoSimulacao - tempoAtual;
+                }
             }
 
             //calculo do E[N]
@@ -163,16 +183,32 @@ int main() {
             en.tempoAnterior = tempoAtual;
             en.numeroEventos--;
 
+            ew_saida.somaAreas += ew_saida.numeroEventos * (tempoAtual - ew_saida.tempoAnterior);
+            ew_saida.tempoAnterior = tempoAtual;
+            ew_saida.numeroEventos++;
+            
+            soma_pct_vazao += tamanho_pct;
+            soma_pct_util += tamanho_pct - 40.0;
         }
         //printf("fila %lF\n", fila);
         //getchar();
     }
+    printf("\n ew_entrada.area: %lf", ew_entrada.somaAreas);
+    printf("\n ew_saida.area: %lf", ew_saida.somaAreas);
+    printf("\n entrada menos saida: %lf", (ew_entrada.somaAreas - ew_saida.somaAreas));
+    double ew_area = ew_entrada.somaAreas - ew_saida.somaAreas;
+    ew_area = ew_area/num_pacotes;
+        
 
-    printf("Ocupacao: %lF\n", ocupacao / tempoSimulacao);
-    printf("Tempo de pacotes sendo processados: %lF\n", tempo_processando/num_pacotes);
-    printf("E[W]: %lF\n", ocupacao / num_pacotes);
+    printf("\nOcupacao: %lF\n", ocupacao / tempoSimulacao);
+    printf("Tempo de pacotes sendo processados: %lF\n", tempo_processando / num_pacotes);
+    printf("E[W] little: %lF\n", ((en.somaAreas / tempoAtual)) / (num_pacotes / tempoSimulacao));
+    printf("E[W] nosso: %lF\n",ew_area);
     printf("E[N]: %lF", (en.somaAreas / tempoAtual));
     printf("\nNúmero de pacotes: %d", num_pacotes);
+    printf("\nlambida: %lf", num_pacotes / tempoSimulacao);
+    printf("\nVazão: %lf", soma_pct_vazao/tempoSimulacao);
+    printf("\nGoodPut - Dados úteis: %lf\n", soma_pct_util/tempoSimulacao);
 
 
     return (0);
