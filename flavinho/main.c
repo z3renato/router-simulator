@@ -123,7 +123,7 @@ int main() {
         //chegada de pacote
         if (tempoAtual == tempoChegada) {
             num_pacotes++;
-            
+
             tamanho_pct = retornaPct();
             //printf("tempo atual == chegada %lF\n", tempoAtual);
             //getchar();
@@ -133,10 +133,12 @@ int main() {
                 tempo_chegada_anterior = tempoChegada;
                 //gerar o tempo de atendimento
                 tempoSaida = tempoAtual + tamanho_pct / larguraBanda;
-                if (tempoSaida < tempoSimulacao)
+                if (tempoSaida < tempoSimulacao) {
                     ocupacao += tempoSaida - tempoAtual;
-                else
+                } else {
                     ocupacao += tempoSimulacao - tempoAtual;
+
+                }
             }
 
             //insiro na fila
@@ -161,7 +163,7 @@ int main() {
         } else {//saida de pacote
             //printf("tempo atual == saida %lF\n", tempoAtual);
             //getchar();
-            
+
             tamanho_pct = retornaPct();
 
             fila--;
@@ -173,7 +175,7 @@ int main() {
                 tempo_processando += tempoSaida - tempoAtual;
                 if (tempoSaida < tempoSimulacao)
                     ocupacao += tempoSaida - tempoAtual;
-                else{
+                else {
                     ocupacao += tempoSimulacao - tempoAtual;
                 }
             }
@@ -186,29 +188,29 @@ int main() {
             ew_saida.somaAreas += ew_saida.numeroEventos * (tempoAtual - ew_saida.tempoAnterior);
             ew_saida.tempoAnterior = tempoAtual;
             ew_saida.numeroEventos++;
-            
+
             soma_pct_vazao += tamanho_pct;
             soma_pct_util += tamanho_pct - 40.0;
         }
         //printf("fila %lF\n", fila);
         //getchar();
     }
-    printf("\n ew_entrada.area: %lf", ew_entrada.somaAreas);
-    printf("\n ew_saida.area: %lf", ew_saida.somaAreas);
-    printf("\n entrada menos saida: %lf", (ew_entrada.somaAreas - ew_saida.somaAreas));
+    printf("\new_entrada.area: %lf", ew_entrada.somaAreas);
+    printf("\new_saida.area: %lf", ew_saida.somaAreas);
+    printf("\nentrada menos saida: %lf", (ew_entrada.somaAreas - ew_saida.somaAreas));
     double ew_area = ew_entrada.somaAreas - ew_saida.somaAreas;
-    ew_area = ew_area/num_pacotes;
-        
+
+    ew_area = ew_area / num_pacotes;
+
 
     printf("\nOcupacao: %lF\n", ocupacao / tempoSimulacao);
-    printf("Tempo de pacotes sendo processados: %lF\n", tempo_processando / num_pacotes);
     printf("E[W] little: %lF\n", ((en.somaAreas / tempoAtual)) / (num_pacotes / tempoSimulacao));
-    printf("E[W] nosso: %lF\n",ew_area);
+    printf("E[W] nosso: %lF\n", ew_area);
     printf("E[N]: %lF", (en.somaAreas / tempoAtual));
     printf("\nNúmero de pacotes: %d", num_pacotes);
     printf("\nlambida: %lf", num_pacotes / tempoSimulacao);
-    printf("\nVazão: %lf", soma_pct_vazao/tempoSimulacao);
-    printf("\nGoodPut - Dados úteis: %lf\n", soma_pct_util/tempoSimulacao);
+    printf("\nVazão: %lf", soma_pct_vazao / tempoSimulacao);
+    printf("\nGoodPut - Dados úteis: %lf\n", soma_pct_util / tempoSimulacao);
 
 
     return (0);
