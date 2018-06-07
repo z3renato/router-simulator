@@ -69,7 +69,10 @@ int main() {
 
 
     //largura de banda em Bytes/seg
-    double larguraBanda = 36750.0;
+    int unidade_link = 1000000;
+    double largura_link = 10;
+    double larguraBanda = largura_link * larguraBanda;
+    
     //tempo de simulacao em segundos
     double tempoSimulacao = 7200.0;
 
@@ -100,9 +103,8 @@ int main() {
     //o "tempo passar" dentro do simulador
     double tempoAtual = 0.0;
     double ocupacao = 0.0;
-    double tempo_chegada_anterior;
 
-    //variavel para o calculo de E[N]
+    //variavel para o calculo de E[N] e E[W]
     Info en;
     Info ew_entrada;
     Info ew_saida;
@@ -111,7 +113,6 @@ int main() {
     iniciaInfo(&ew_saida);
 
     int num_pacotes = 0;
-    double tempo_processando = 0.0;
 
     while (tempoAtual <= tempoSimulacao) {
         if (!fila) {
@@ -124,21 +125,17 @@ int main() {
         if (tempoAtual == tempoChegada) {
             num_pacotes++;
 
-            tamanho_pct = retornaPct();
+
             //printf("tempo atual == chegada %lF\n", tempoAtual);
             //getchar();
             //roteador vazio!
             //logo, o pacote ja entra sendo atendido
             if (!fila) {
-                tempo_chegada_anterior = tempoChegada;
                 //gerar o tempo de atendimento
-                tempoSaida = tempoAtual + tamanho_pct / larguraBanda;
-                if (tempoSaida < tempoSimulacao) {
-                    ocupacao += tempoSaida - tempoAtual;
-                } else {
-                    ocupacao += tempoSimulacao - tempoAtual;
+                tempoSaida = tempoAtual + retornaPct() / larguraBanda;
 
-                }
+                ocupacao += tempoSaida - tempoAtual;
+
             }
 
             //insiro na fila
@@ -154,8 +151,6 @@ int main() {
             ew_entrada.tempoAnterior = tempoAtual;
             ew_entrada.numeroEventos++;
 
-            soma_pct_vazao += tamanho_pct;
-            soma_pct_util += tamanho_pct - 40.0;
 
             //**********************
             //gero o tempo de chegada do proximo
@@ -167,17 +162,13 @@ int main() {
             tamanho_pct = retornaPct();
 
             fila--;
-            tempo_processando += tempoSaida - tempo_chegada_anterior;
             if (fila) {
                 //gerar o tempo de atendimento
                 //do pacote seguinte na fila
                 tempoSaida = tempoAtual + tamanho_pct / larguraBanda;
-                tempo_processando += tempoSaida - tempoAtual;
-                if (tempoSaida < tempoSimulacao)
-                    ocupacao += tempoSaida - tempoAtual;
-                else {
-                    ocupacao += tempoSimulacao - tempoAtual;
-                }
+
+                ocupacao += tempoSaida - tempoAtual;
+
             }
 
             //calculo do E[N]
@@ -189,12 +180,23 @@ int main() {
             ew_saida.tempoAnterior = tempoAtual;
             ew_saida.numeroEventos++;
 
+
             soma_pct_vazao += tamanho_pct;
             soma_pct_util += tamanho_pct - 40.0;
         }
         //printf("fila %lF\n", fila);
         //getchar();
     }
+    ew_entrada.somaAreas += ew_entrada.numeroEventos * (tempoAtual - ew_entrada.tempoAnterior);
+    ew_saida.somaAreas += ew_saida.numeroEventos * (tempoAtual - ew_saida.tempoAnterior);
+    /* conversor
+     1 = byte
+     * 1 = byte
+     * 1000 = kilo
+     * 1000000=mega
+     * 1000000000 = giga
+     */
+    int conversor = 1000;
     printf("\new_entrada.area: %lf", ew_entrada.somaAreas);
     printf("\new_saida.area: %lf", ew_saida.somaAreas);
     printf("\nentrada menos saida: %lf", (ew_entrada.somaAreas - ew_saida.somaAreas));
@@ -209,10 +211,41 @@ int main() {
     printf("E[N]: %lF", (en.somaAreas / tempoAtual));
     printf("\nNúmero de pacotes: %d", num_pacotes);
     printf("\nlambida: %lf", num_pacotes / tempoSimulacao);
-    printf("\nVazão: %lf", soma_pct_vazao / tempoSimulacao);
-    printf("\nGoodPut - Dados úteis: %lf\n", soma_pct_util / tempoSimulacao);
+    printf("\nVazão: %lf", (soma_pct_vazao / tempoSimulacao) / conversor);
+    switch (conversor) {
+        case 1:
+            printf(" bytes/segundos\n");
+            break;
+        case 1000:
+            printf(" KiloBytes/segundos\n");
+            break;
+        case 1000000:
+            printf(" MegaBytes/segundos\n");
+            break;
+        case 1000000000:
+            printf(" GigaBytes/segundos\n");
+            break;
+        default:
+            printf("\nse fudeu\n");
+    }
+    printf("\nGoodPut - Dados úteis: %lf", (soma_pct_util / tempoSimulacao) / conversor);
+    switch (conversor) {
+        case 1:
+            printf(" bytes/segundos\n");
+            break;
+        case 1000:
+            printf(" KiloBytes/segundos\n");
+            break;
+        case 1000000:
+            printf(" MegaBytes/segundos\n");
+            break;
+        case 1000000000:
+            printf(" GigaBytes/segundos\n");
+            break;
+        default:
+            printf("\nse fudeu\n");
+    }
 
 
     return (0);
 }
-
